@@ -51,27 +51,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const currentRates: ExternalRate[] = await extResponse.json();
 
-    // 3. Get Last Record
+    // 3. Get Last Record from DB to compare
     const lastRecord = await collection.findOne({}, { sort: { timestamp: -1 } });
 
-    // 4. Compare and Update
     let needsUpdate = false;
+    
     if (!lastRecord) {
       needsUpdate = true;
     } else {
-      // Check if any price changed
+      // Compare logic
       const currentMap = new Map(currentRates.map(r => [r.code, r.price]));
       const prevMap = new Map(lastRecord.rates.map(r => [r.code, r.price]));
       
-      for (const [code, price] of currentMap) {
-        if (prevMap.get(code) !== price) {
-          needsUpdate = true;
-          break;
+      if (currentMap.size !== prevMap.size) {
+        needsUpdate = true;
+      } else {
+        for (const [code, price] of currentMap) {
+          if (prevMap.get(code) !== price) {
+            needsUpdate = true;
+            break;
+          }
         }
       }
-      if (currentMap.size !== prevMap.size) needsUpdate = true;
     }
 
+    // 4. Update DB if needed
     if (needsUpdate) {
       await collection.insertOne({
         rates: currentRates,
@@ -79,13 +83,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // 5. Construct Response
+    // 5. Fetch final 2 records for display
+    // We need the absolute latest (which might be the one we just inserted or the old one)
+    // and the one before it.
+    const lastTwoRecords = await collection
+      .find({})
+      .sort({ timestamp: -1 })
+      .limit(2)
+      .toArray();
+
+    const actualRecord = lastTwoRecords[0];
+    const previousRecord = lastTwoRecords.length > 1 ? lastTwoRecords[1] : null;
+
+    // 6. Construct Response
+    // lastUpdated MUST be the DB timestamp to correctly reflect when the price actually changed/was recorded
     const responseData = {
-      current: currentRates,
-      previous: lastRecord ? lastRecord.rates : [],
-      // Return current time as lastUpdated to indicate "Freshness" of the check (Green status)
-      // The history logic handles the actual price changes
-      lastUpdated: new Date().toISOString()
+      current: actualRecord ? actualRecord.rates : currentRates,
+      previous: previousRecord ? previousRecord.rates : (actualRecord ? actualRecord.rates : []),
+      lastUpdated: actualRecord ? actualRecord.timestamp : new Date().toISOString()
     };
 
     res.status(200).json(responseData);

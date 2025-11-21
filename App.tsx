@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { formatDistanceToNow, differenceInHours } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import ru from 'date-fns/locale/ru';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { RateData, ApiResponse } from './types';
+import { ApiResponse, RateData } from './types';
 import { RateCard } from './components/RateCard';
 import { DigitAnalysis } from './components/DigitAnalysis';
 import { fetchRates } from './services/api';
@@ -68,23 +68,32 @@ const App: React.FC = () => {
 
   const currentRates = data ? getSortedRates(data.current) : [];
   const prevRates = data ? getSortedRates(data.previous) : [];
+  const stale = isStale(data?.lastUpdated);
+
+  // Header styles based on state
+  const headerBaseClass = "sticky top-0 z-50 px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-sm";
+  const headerColorClass = loading 
+    ? 'bg-slate-200' 
+    : stale 
+      ? 'bg-yellow-100 text-yellow-900' 
+      : 'bg-green-100 text-green-900';
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl flex flex-col relative">
       {/* Header / Status Bar */}
       <header 
         onClick={!loading ? loadData : undefined}
-        className={`sticky top-0 z-50 px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-sm
-          ${loading ? 'bg-slate-200' : isStale(data?.lastUpdated) ? 'bg-yellow-100 text-yellow-900' : 'bg-green-100 text-green-900'}
-        `}
+        className={`${headerBaseClass} ${headerColorClass}`}
       >
         <div className="flex flex-col">
-          <span className="text-xs font-bold uppercase opacity-70">
-            {loading ? 'Обновление...' : isStale(data?.lastUpdated) ? 'Данные устарели' : 'Актуально'}
-          </span>
+          {!stale && !loading && (
+             <span className="text-xs font-bold uppercase opacity-70">
+               Актуально
+             </span>
+          )}
           <span className="text-sm font-medium truncate">
             {data?.lastUpdated 
-              ? formatDistanceToNow(new Date(data.lastUpdated), { addSuffix: true, locale: ru }) 
+              ? formatDistanceToNow(new Date(data.lastUpdated), { addSuffix: true, locale: ru } as any) 
               : 'Нет данных'}
           </span>
         </div>
@@ -102,7 +111,8 @@ const App: React.FC = () => {
               <RateCard 
                 key={rate.code} 
                 rate={rate} 
-                previousRate={previousRate} 
+                previousRate={previousRate}
+                isStale={stale}
               />
             );
           })}
@@ -128,8 +138,8 @@ const App: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="mt-4 text-center opacity-50">
-             m-lombard.kz monitor
+          <div className="mt-4 text-center opacity-70 font-bold text-slate-500">
+             Аванс Ломбард
           </div>
         </footer>
       )}

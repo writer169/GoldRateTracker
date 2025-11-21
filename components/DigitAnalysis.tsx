@@ -9,14 +9,20 @@ interface DigitAnalysisProps {
 export const DigitAnalysis: React.FC<DigitAnalysisProps> = ({ current, previous }) => {
   
   const diffs = useMemo(() => {
+    // Helper: Treat '9' as '6'
+    const normalizeDigit = (char: string) => char === '9' ? '6' : char;
+
     const countDigits = (rates: RateData[]) => {
-      const counts: DigitCounts = { '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0 };
+      const counts: DigitCounts = { '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0 }; 
+      // Note: no '9' key needed in initial object if we strictly normalize, 
+      // but types might expect string indexing.
+      
       rates.forEach(r => {
         const strPrice = r.price.toString();
         for (const char of strPrice) {
-          if (counts[char] !== undefined) {
-            counts[char]++;
-          }
+          const d = normalizeDigit(char);
+          if (counts[d] === undefined) counts[d] = 0;
+          counts[d]++;
         }
       });
       return counts;
@@ -26,63 +32,40 @@ export const DigitAnalysis: React.FC<DigitAnalysisProps> = ({ current, previous 
     const prevCounts = countDigits(previous);
     
     const needed: { digit: string; count: number }[] = [];
-    const extra: { digit: string; count: number }[] = [];
 
-    for (let i = 0; i <= 9; i++) {
-      const d = i.toString();
+    // Check 0-8 (since 9 is merged into 6)
+    const digitsToCheck = ['0', '1', '2', '3', '4', '5', '6', '7', '8'];
+    
+    for (const d of digitsToCheck) {
       const diff = (currentCounts[d] || 0) - (prevCounts[d] || 0);
       if (diff > 0) {
         needed.push({ digit: d, count: diff });
-      } else if (diff < 0) {
-        extra.push({ digit: d, count: Math.abs(diff) });
       }
     }
 
-    return { needed, extra };
+    return { needed };
   }, [current, previous]);
 
-  if (diffs.needed.length === 0 && diffs.extra.length === 0) {
+  if (diffs.needed.length === 0) {
     return null;
   }
 
   return (
-    <div className="bg-slate-800 text-white rounded-xl p-4 shadow-lg">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-700 pb-2">
-        Обновление Табло
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 border-b border-slate-100 pb-2">
+        Обновление Табло (Добавить)
       </h3>
       
       <div className="space-y-4">
-        {/* Missing Digits */}
-        <div>
-          <span className="text-xs text-green-400 font-bold block mb-1">ДОБАВИТЬ ЦИФРЫ:</span>
-          {diffs.needed.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {diffs.needed.map(({ digit, count }) => (
-                <div key={digit} className="bg-green-600 text-white font-bold font-mono px-2 py-1 rounded text-sm min-w-[32px] text-center border border-green-400 shadow-sm">
-                  {digit} <span className="opacity-70 text-[10px] ml-1">x{count}</span>
-                </div>
-              ))}
+        <div className="flex flex-wrap gap-3">
+          {diffs.needed.map(({ digit, count }) => (
+            <div key={digit} className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-lg p-2 min-w-[50px]">
+              <span className="text-2xl font-black text-slate-800 leading-none">{digit}</span>
+              <span className="text-sm font-bold text-green-600 mt-1">+{count} шт</span>
             </div>
-          ) : (
-            <span className="text-xs text-slate-500 italic">Нет недостающих цифр</span>
-          )}
+          ))}
         </div>
-
-        {/* Extra Digits */}
-        <div>
-          <span className="text-xs text-red-400 font-bold block mb-1">УБРАТЬ ЦИФРЫ:</span>
-          {diffs.extra.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {diffs.extra.map(({ digit, count }) => (
-                <div key={digit} className="bg-red-900/50 text-red-200 font-bold font-mono px-2 py-1 rounded text-sm min-w-[32px] text-center border border-red-900/50">
-                  {digit} <span className="opacity-70 text-[10px] ml-1">x{count}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-             <span className="text-xs text-slate-500 italic">Нет лишних цифр</span>
-          )}
-        </div>
+        <p className="text-[10px] text-slate-400 italic">* Цифры 6 и 9 взаимозаменяемы (посчитаны как 6)</p>
       </div>
     </div>
   );
