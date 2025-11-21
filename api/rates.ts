@@ -69,7 +69,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           break;
         }
       }
-      // Also check if lengths differ (rare but possible)
       if (currentMap.size !== prevMap.size) needsUpdate = true;
     }
 
@@ -81,17 +80,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 5. Construct Response
-    // If we just updated, the previous record is the one BEFORE the insert (which is 'lastRecord').
-    // If we didn't update, the current is 'lastRecord' and previous is the one before that?
-    // Requirement: "Compare with data written in database".
-    
-    // Simplification: Always return "Current Live" vs "Last Saved in DB (before this fetch)"
-    // If we updated DB just now, 'lastRecord' is still the logic 'previous'.
-    
     const responseData = {
       current: currentRates,
       previous: lastRecord ? lastRecord.rates : [],
-      lastUpdated: needsUpdate ? new Date().toISOString() : (lastRecord?.timestamp.toISOString() || new Date().toISOString())
+      // Return current time as lastUpdated to indicate "Freshness" of the check (Green status)
+      // The history logic handles the actual price changes
+      lastUpdated: new Date().toISOString()
     };
 
     res.status(200).json(responseData);
