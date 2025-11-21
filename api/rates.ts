@@ -10,6 +10,7 @@ interface ExternalRate {
 
 // DB Schema
 interface RateDocument {
+  _id?: any;
   rates: ExternalRate[];
   timestamp: Date;
 }
@@ -81,11 +82,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         rates: currentRates,
         timestamp: new Date()
       });
+
+      // CLEANUP: Keep only the last 2 records
+      // Find the latest 2 IDs
+      const latestDocs = await collection
+        .find({}, { projection: { _id: 1 } })
+        .sort({ timestamp: -1 })
+        .limit(2)
+        .toArray();
+
+      if (latestDocs.length > 0) {
+        const keepIds = latestDocs.map(doc => doc._id);
+        // Delete anything that is NOT in the keep list
+        await collection.deleteMany({ _id: { $nin: keepIds } });
+      }
     }
 
     // 5. Fetch final 2 records for display
-    // We need the absolute latest (which might be the one we just inserted or the old one)
-    // and the one before it.
     const lastTwoRecords = await collection
       .find({})
       .sort({ timestamp: -1 })
@@ -96,7 +109,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const previousRecord = lastTwoRecords.length > 1 ? lastTwoRecords[1] : null;
 
     // 6. Construct Response
-    // lastUpdated MUST be the DB timestamp to correctly reflect when the price actually changed/was recorded
     const responseData = {
       current: actualRecord ? actualRecord.rates : currentRates,
       previous: previousRecord ? previousRecord.rates : (actualRecord ? actualRecord.rates : []),

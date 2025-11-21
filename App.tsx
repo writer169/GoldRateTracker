@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { formatDistanceToNow, differenceInHours } from 'date-fns';
+import { differenceInHours, format } from 'date-fns';
 import ru from 'date-fns/locale/ru';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { ApiResponse, RateData } from './types';
@@ -56,6 +56,15 @@ const App: React.FC = () => {
     return differenceInHours(new Date(), date) >= 12;
   };
 
+  const formatKZDate = (dateString: string) => {
+    const date = new Date(dateString);
+    // Get UTC time in ms
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    // Add 5 hours for KZ
+    const kzTime = new Date(utc + (3600000 * 5));
+    return format(kzTime, 'dd.MM.yyyy HH:mm', { locale: ru });
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-100">
@@ -91,9 +100,9 @@ const App: React.FC = () => {
                Актуально
              </span>
           )}
-          <span className="text-sm font-medium truncate">
+          <span className="text-lg font-bold truncate">
             {data?.lastUpdated 
-              ? formatDistanceToNow(new Date(data.lastUpdated), { addSuffix: true, locale: ru } as any) 
+              ? formatKZDate(data.lastUpdated)
               : 'Нет данных'}
           </span>
         </div>
@@ -128,17 +137,17 @@ const App: React.FC = () => {
 
       {/* Footer History */}
       {data && data.previous.length > 0 && (
-        <footer className="p-4 bg-slate-50 border-t border-slate-200 text-slate-400 text-xs">
-          <p className="font-semibold mb-2 uppercase tracking-wider">Предыдущие цены</p>
-          <div className="grid grid-cols-3 gap-2">
+        <footer className="p-4 bg-slate-50 border-t border-slate-200 text-xs">
+          <p className="font-semibold mb-3 uppercase tracking-wider text-slate-500">Предыдущие цены</p>
+          <div className="grid grid-cols-3 gap-3">
             {prevRates.map(r => (
               <div key={r.code} className="flex flex-col">
-                <span className="font-mono text-[10px]">{r.label}</span>
-                <span className="font-mono">{r.price.toLocaleString('ru-RU')} ₸</span>
+                <span className="font-mono text-xs font-medium text-slate-500 mb-1">{r.label}</span>
+                <span className="font-mono text-xl font-bold text-slate-700">{r.price.toLocaleString('ru-RU')}</span>
               </div>
             ))}
           </div>
-          <div className="mt-4 text-center opacity-70 font-bold text-slate-500">
+          <div className="mt-6 text-center opacity-70 font-bold text-slate-500 text-sm">
              Аванс Ломбард
           </div>
         </footer>

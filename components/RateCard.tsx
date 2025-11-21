@@ -11,9 +11,6 @@ interface RateCardProps {
 export const RateCard: React.FC<RateCardProps> = ({ rate, previousRate, isStale }) => {
   const diff = previousRate ? rate.price - previousRate.price : 0;
   
-  const isHighValue = rate.code === '999';
-  const isMidValue = rate.code === '750';
-  
   // Border color depends on freshness (isStale), not code
   const borderColorClass = isStale 
     ? 'border-yellow-400 ring-4 ring-yellow-400/10 bg-yellow-50/50' 
@@ -27,10 +24,11 @@ export const RateCard: React.FC<RateCardProps> = ({ rate, previousRate, isStale 
   return (
     <div className={containerClasses}>
       <div className="flex justify-between items-baseline mb-1">
-        <span className={`font-black tracking-tighter text-slate-800 ${isHighValue ? 'text-5xl' : isMidValue ? 'text-4xl' : 'text-4xl'}`}>
+        {/* Unified font size for all rates */}
+        <span className="font-black tracking-tighter text-slate-800 text-5xl">
           {rate.price.toLocaleString('ru-RU')}
         </span>
-        <span className={`font-mono font-bold text-slate-500 ${isHighValue ? 'text-xl' : 'text-lg'}`}>
+        <span className="font-mono font-bold text-slate-500 text-xl">
           {rate.label}
         </span>
       </div>
