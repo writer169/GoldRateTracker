@@ -45,6 +45,21 @@ const App: React.FC = () => {
     }
   }, [key, loadData]);
 
+  // Автоматическая перезагрузка при возврате на страницу
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && key) {
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [key, loadData]);
+
   // Sort rates: 999 -> 750 -> 585
   const getSortedRates = (rates: RateData[]) => {
     return [...rates].sort((a, b) => Number(b.code) - Number(a.code));
