@@ -153,7 +153,14 @@ const App: React.FC = () => {
       {/* Footer History */}
       {data && data.previous.length > 0 && (
         <footer className="p-3 bg-slate-50 border-t border-slate-200 text-xs">
-          <p className="font-semibold mb-2 uppercase tracking-wider text-slate-500">Предыдущие цены</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-semibold uppercase tracking-wider text-slate-500">Предыдущие цены</p>
+            {data.previous.length > 0 && data.previous[0] && (
+              <p className="text-[11px] text-slate-400">
+                {formatKZDate(data.lastUpdated)}
+              </p>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-2 mb-2">
             {prevRates.map(r => (
               <div key={r.code} className="flex flex-col">
@@ -162,11 +169,6 @@ const App: React.FC = () => {
               </div>
             ))}
           </div>
-          {data.previous.length > 0 && data.previous[0] && (
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Дата записи: {formatKZDate(data.lastUpdated)}
-            </p>
-          )}
           <div className="mt-4 text-center opacity-70 font-bold text-slate-500 text-sm">
              Аванс Ломбард
           </div>
