@@ -3,5 +3,11 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased min-h-screen;
+  @apply bg-slate-50 text-slate-900 antialiased;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+html {
+  height: -webkit-fill-available;
 }
