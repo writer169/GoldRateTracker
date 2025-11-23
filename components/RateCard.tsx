@@ -17,15 +17,15 @@ export const RateCard: React.FC<RateCardProps> = ({ rate, previousRate, isStale 
     : 'border-green-500 ring-4 ring-green-500/10 bg-green-50/50';
 
   const containerClasses = `
-    relative overflow-hidden rounded-2xl border-2 p-5 shadow-sm transition-all
+    relative overflow-hidden rounded-2xl border-2 p-4 shadow-sm transition-all
     ${borderColorClass}
   `;
 
   return (
     <div className={containerClasses}>
       <div className="flex justify-between items-baseline mb-1">
-        {/* Unified font size for all rates */}
-        <span className="font-black tracking-tighter text-slate-800 text-5xl">
+        {/* Уменьшенный размер цифр расценок */}
+        <span className="font-black tracking-tighter text-slate-800 text-4xl">
           {rate.price.toLocaleString('ru-RU')}
         </span>
         <span className="font-mono font-bold text-slate-500 text-xl">
@@ -33,7 +33,7 @@ export const RateCard: React.FC<RateCardProps> = ({ rate, previousRate, isStale 
         </span>
       </div>
 
-      <div className="flex items-center space-x-2 mt-2 h-6">
+      <div className="flex items-center space-x-2 mt-1 h-6">
         {diff !== 0 ? (
           <>
             <div className={`
