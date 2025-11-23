@@ -155,9 +155,9 @@ const App: React.FC = () => {
         <footer className="p-3 bg-slate-50 border-t border-slate-200 text-xs">
           <div className="flex items-center justify-between mb-2">
             <p className="font-semibold uppercase tracking-wider text-slate-500">Предыдущие цены</p>
-            {data.previous.length > 0 && data.previous[0] && (
+            {data.previousUpdated && (
               <p className="text-[11px] text-slate-400">
-                {formatKZDate(data.lastUpdated)}
+                {formatKZDate(data.previousUpdated)}
               </p>
             )}
           </div>
