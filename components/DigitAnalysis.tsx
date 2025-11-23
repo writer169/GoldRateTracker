@@ -49,20 +49,20 @@ export const DigitAnalysis: React.FC<DigitAnalysisProps> = ({ current, previous 
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 border-b border-slate-100 pb-2">
+    <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 border-b border-slate-100 pb-1.5">
         Обновление Табло (Добавить)
       </h3>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {diffs.needed.map(({ digit, count }) => {
           // Создаем массив с повторениями цифры
           return Array.from({ length: count }, (_, index) => (
             <div 
               key={`${digit}-${index}`} 
-              className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-lg p-2 min-w-[45px]"
+              className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-lg p-1.5 min-w-[40px]"
             >
-              <span className="text-xl font-black text-slate-800 leading-none">{digit}</span>
+              <span className="text-lg font-black text-slate-800 leading-none">{digit}</span>
             </div>
           ));
         })}
