@@ -14,8 +14,6 @@ export const DigitAnalysis: React.FC<DigitAnalysisProps> = ({ current, previous 
 
     const countDigits = (rates: RateData[]) => {
       const counts: DigitCounts = { '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0 }; 
-      // Note: no '9' key needed in initial object if we strictly normalize, 
-      // but types might expect string indexing.
       
       rates.forEach(r => {
         const strPrice = r.price.toString();
@@ -51,21 +49,23 @@ export const DigitAnalysis: React.FC<DigitAnalysisProps> = ({ current, previous 
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 border-b border-slate-100 pb-2">
+    <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 border-b border-slate-100 pb-1.5">
         Обновление Табло (Добавить)
       </h3>
       
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-3">
-          {diffs.needed.map(({ digit, count }) => (
-            <div key={digit} className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-lg p-2 min-w-[50px]">
-              <span className="text-2xl font-black text-slate-800 leading-none">{digit}</span>
-              <span className="text-sm font-bold text-green-600 mt-1">+{count} шт</span>
+      <div className="flex flex-wrap gap-1.5">
+        {diffs.needed.map(({ digit, count }) => {
+          // Создаем массив с повторениями цифры
+          return Array.from({ length: count }, (_, index) => (
+            <div 
+              key={`${digit}-${index}`} 
+              className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-lg p-1.5 min-w-[40px]"
+            >
+              <span className="text-lg font-black text-slate-800 leading-none">{digit}</span>
             </div>
-          ))}
-        </div>
-        <p className="text-[10px] text-slate-400 italic">* Цифры 6 и 9 взаимозаменяемы (посчитаны как 6)</p>
+          ));
+        })}
       </div>
     </div>
   );
