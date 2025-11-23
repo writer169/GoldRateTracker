@@ -112,7 +112,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const responseData = {
       current: actualRecord ? actualRecord.rates : currentRates,
       previous: previousRecord ? previousRecord.rates : (actualRecord ? actualRecord.rates : []),
-      lastUpdated: actualRecord ? actualRecord.timestamp : new Date().toISOString()
+      lastUpdated: actualRecord ? actualRecord.timestamp : new Date().toISOString(),
+      previousUpdated: previousRecord ? previousRecord.timestamp : undefined
     };
 
     res.status(200).json(responseData);
