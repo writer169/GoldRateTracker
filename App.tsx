@@ -103,7 +103,7 @@ const App: React.FC = () => {
       : 'bg-green-100 text-green-900';
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl flex flex-col relative">
+    <div className="max-w-md mx-auto min-h-dvh bg-white shadow-xl flex flex-col relative">
       {/* Header / Status Bar */}
       <header 
         onClick={!loading ? loadData : undefined}
