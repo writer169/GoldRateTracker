@@ -128,7 +128,7 @@ const App: React.FC = () => {
 
       <main className="flex-grow p-4 space-y-6">
         {/* Main Price Cards */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {currentRates.map((rate) => {
             const previousRate = prevRates.find(p => p.code === rate.code);
             return (
@@ -154,14 +154,19 @@ const App: React.FC = () => {
       {data && data.previous.length > 0 && (
         <footer className="p-4 bg-slate-50 border-t border-slate-200 text-xs">
           <p className="font-semibold mb-3 uppercase tracking-wider text-slate-500">Предыдущие цены</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 mb-3">
             {prevRates.map(r => (
               <div key={r.code} className="flex flex-col">
                 <span className="font-mono text-xs font-medium text-slate-500 mb-1">{r.label}</span>
-                <span className="font-mono text-xl font-bold text-slate-700">{r.price.toLocaleString('ru-RU')}</span>
+                <span className="font-mono text-xl font-bold text-slate-700">{r.price}</span>
               </div>
             ))}
           </div>
+          {data.previous.length > 0 && data.previous[0] && (
+            <p className="text-[11px] text-slate-400 mt-2">
+              Дата записи: {formatKZDate(data.lastUpdated)}
+            </p>
+          )}
           <div className="mt-6 text-center opacity-70 font-bold text-slate-500 text-sm">
              Аванс Ломбард
           </div>
