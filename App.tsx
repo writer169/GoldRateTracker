@@ -95,7 +95,7 @@ const App: React.FC = () => {
   const stale = isStale(data?.lastUpdated);
 
   // Header styles based on state
-  const headerBaseClass = "sticky top-0 z-50 px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-sm";
+  const headerBaseClass = "sticky top-0 z-50 px-4 py-2 flex items-center justify-between cursor-pointer transition-colors shadow-sm";
   const headerColorClass = loading 
     ? 'bg-slate-200' 
     : stale 
@@ -126,9 +126,9 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-grow p-4 space-y-6">
+      <main className="flex-grow p-3 space-y-4">
         {/* Main Price Cards */}
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {currentRates.map((rate) => {
             const previousRate = prevRates.find(p => p.code === rate.code);
             return (
@@ -144,7 +144,7 @@ const App: React.FC = () => {
 
         {/* Digit Analysis */}
         {data && data.previous.length > 0 && (
-          <div className="pt-4 border-t border-slate-200">
+          <div className="pt-3 border-t border-slate-200">
             <DigitAnalysis current={data.current} previous={data.previous} />
           </div>
         )}
@@ -152,22 +152,22 @@ const App: React.FC = () => {
 
       {/* Footer History */}
       {data && data.previous.length > 0 && (
-        <footer className="p-4 bg-slate-50 border-t border-slate-200 text-xs">
-          <p className="font-semibold mb-3 uppercase tracking-wider text-slate-500">Предыдущие цены</p>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+        <footer className="p-3 bg-slate-50 border-t border-slate-200 text-xs">
+          <p className="font-semibold mb-2 uppercase tracking-wider text-slate-500">Предыдущие цены</p>
+          <div className="grid grid-cols-3 gap-2 mb-2">
             {prevRates.map(r => (
               <div key={r.code} className="flex flex-col">
-                <span className="font-mono text-xs font-medium text-slate-500 mb-1">{r.label}</span>
-                <span className="font-mono text-xl font-bold text-slate-700">{r.price}</span>
+                <span className="font-mono text-xs font-medium text-slate-500 mb-0.5">{r.label}</span>
+                <span className="font-mono text-lg font-bold text-slate-700">{r.price}</span>
               </div>
             ))}
           </div>
           {data.previous.length > 0 && data.previous[0] && (
-            <p className="text-[11px] text-slate-400 mt-2">
+            <p className="text-[11px] text-slate-400 mt-1.5">
               Дата записи: {formatKZDate(data.lastUpdated)}
             </p>
           )}
-          <div className="mt-6 text-center opacity-70 font-bold text-slate-500 text-sm">
+          <div className="mt-4 text-center opacity-70 font-bold text-slate-500 text-sm">
              Аванс Ломбард
           </div>
         </footer>
