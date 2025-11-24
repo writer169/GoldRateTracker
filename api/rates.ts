@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { getRedisClient } from '../lib/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Types for the external API
@@ -8,29 +8,13 @@ interface ExternalRate {
   price: number;
 }
 
-// DB Schema
-interface RateDocument {
-  _id?: any;
+// Redis Schema
+interface RateRecord {
   rates: ExternalRate[];
-  timestamp: Date;
+  timestamp: string;
 }
 
-const uri = process.env.MONGODB_URI || "";
 const expectedKey = process.env.SECRET_KEY || "dev-key";
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
-if (!process.env.MONGODB_URI) {
-  console.error("Please add your Mongo URI to .env.local");
-}
-
-// Connection caching for Serverless
-if (!global._mongoClientPromise) {
-  client = new MongoClient(uri);
-  global._mongoClientPromise = client.connect();
-}
-clientPromise = global._mongoClientPromise;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { key } = req.query;
@@ -40,10 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
+  let client;
+
   try {
-    const mongoClient = await clientPromise;
-    const db = mongoClient.db("gold_rates_db");
-    const collection = db.collection<RateDocument>("history");
+    client = await getRedisClient();
 
     // 2. Fetch External Data
     const extResponse = await fetch('https://m-lombard.kz/ru/api/admin/purities/?format=json');
@@ -52,8 +36,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const currentRates: ExternalRate[] = await extResponse.json();
 
-    // 3. Get Last Record from DB to compare
-    const lastRecord = await collection.findOne({}, { sort: { timestamp: -1 } });
+    // 3. Get Last Record from Redis to compare
+    const lastRecordJson = await client.get('gold_rates:latest');
+    const lastRecord: RateRecord | null = lastRecordJson ? JSON.parse(lastRecordJson) : null;
 
     let needsUpdate = false;
     
@@ -76,43 +61,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // 4. Update DB if needed
+    // 4. Update Redis if needed
     if (needsUpdate) {
-      await collection.insertOne({
+      const newRecord: RateRecord = {
         rates: currentRates,
-        timestamp: new Date()
-      });
+        timestamp: new Date().toISOString()
+      };
 
-      // CLEANUP: Keep only the last 2 records
-      // Find the latest 2 IDs
-      const latestDocs = await collection
-        .find({}, { projection: { _id: 1 } })
-        .sort({ timestamp: -1 })
-        .limit(2)
-        .toArray();
-
-      if (latestDocs.length > 0) {
-        const keepIds = latestDocs.map(doc => doc._id);
-        // Delete anything that is NOT in the keep list
-        await collection.deleteMany({ _id: { $nin: keepIds } });
+      // Move current to previous
+      if (lastRecord) {
+        await client.set('gold_rates:previous', JSON.stringify(lastRecord));
       }
+
+      // Save new as current
+      await client.set('gold_rates:latest', JSON.stringify(newRecord));
     }
 
     // 5. Fetch final 2 records for display
-    const lastTwoRecords = await collection
-      .find({})
-      .sort({ timestamp: -1 })
-      .limit(2)
-      .toArray();
+    const currentRecordJson = await client.get('gold_rates:latest');
+    const previousRecordJson = await client.get('gold_rates:previous');
 
-    const actualRecord = lastTwoRecords[0];
-    const previousRecord = lastTwoRecords.length > 1 ? lastTwoRecords[1] : null;
+    const actualRecord: RateRecord | null = currentRecordJson ? JSON.parse(currentRecordJson) : null;
+    const previousRecord: RateRecord | null = previousRecordJson ? JSON.parse(previousRecordJson) : null;
 
     // 6. Construct Response
     const responseData = {
       current: actualRecord ? actualRecord.rates : currentRates,
       previous: previousRecord ? previousRecord.rates : (actualRecord ? actualRecord.rates : []),
-      lastUpdated: actualRecord ? actualRecord.timestamp : new Date().toISOString()
+      lastUpdated: actualRecord ? actualRecord.timestamp : new Date().toISOString(),
+      previousUpdated: previousRecord ? previousRecord.timestamp : undefined
     };
 
     res.status(200).json(responseData);
@@ -120,10 +97,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error', error: String(error) });
+  } finally {
+    // Закрываем соединение после использования
+    if (client) {
+      await client.quit();
+    }
   }
-}
-
-// Global declaration for TS to handle the cached client
-declare global {
-  var _mongoClientPromise: Promise<MongoClient>;
 }
