@@ -1,4 +1,4 @@
-import { getRedisClient } from '../lib/redis';
+import { createClient } from 'redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Types for the external API
@@ -15,6 +15,26 @@ interface RateRecord {
 }
 
 const expectedKey = process.env.SECRET_KEY || "dev-key";
+
+// Функция для получения Redis клиента
+async function getRedisClient() {
+  const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
+  
+  if (!REDIS_HOST || !REDIS_PORT || !REDIS_PASSWORD) {
+    throw new Error('Redis environment variables are not defined');
+  }
+  
+  const redisPassword = encodeURIComponent(REDIS_PASSWORD);
+  const redisUrl = `redis://default:${redisPassword}@${REDIS_HOST}:${REDIS_PORT}`;
+  
+  const client = createClient({ url: redisUrl });
+  
+  client.on('error', (err) => console.error('Redis Client Error:', err));
+  
+  await client.connect();
+  
+  return client;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { key } = req.query;
