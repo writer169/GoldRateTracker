@@ -6,12 +6,16 @@ import { ApiResponse, RateData } from './types';
 import { RateCard } from './components/RateCard';
 import { DigitAnalysis } from './components/DigitAnalysis';
 import { fetchRates } from './services/api';
+import { useWakeLock } from './hooks/useWakeLock';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [key, setKey] = useState<string>('');
+
+  // Активация Wake Lock для предотвращения затемнения экрана
+  useWakeLock();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
