@@ -6,12 +6,16 @@ import { ApiResponse, RateData } from './types';
 import { RateCard } from './components/RateCard';
 import { DigitAnalysis } from './components/DigitAnalysis';
 import { fetchRates } from './services/api';
+import { useWakeLock } from './hooks/useWakeLock';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [key, setKey] = useState<string>('');
+
+  // Активация Wake Lock для предотвращения затемнения экрана
+  useWakeLock();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -155,9 +159,9 @@ const App: React.FC = () => {
         <footer className="p-3 bg-slate-50 border-t border-slate-200 text-xs">
           <div className="flex items-center justify-between mb-2">
             <p className="font-semibold uppercase tracking-wider text-slate-500">Предыдущие цены</p>
-            {data.previous.length > 0 && data.previous[0] && (
+            {data.previousUpdated && (
               <p className="text-[11px] text-slate-400">
-                {formatKZDate(data.lastUpdated)}
+                {formatKZDate(data.previousUpdated)}
               </p>
             )}
           </div>
