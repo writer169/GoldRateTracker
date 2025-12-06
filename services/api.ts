@@ -55,19 +55,6 @@ export const fetchRates = async (): Promise<ApiResponse> => {
   }
 };
 
-// Проверка необходимости обновления (раз в день)
-export const shouldUpdate = async (): Promise<boolean> => {
-  const lastUpdate = await db.getLastUpdateTime();
-  
-  if (!lastUpdate) return true;
-
-  const now = new Date();
-  const hoursSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);
-  
-  // Обновляем если прошло более 23 часов
-  return hoursSinceUpdate >= 23;
-};
-
 // Инициализация БД при загрузке
 export const initializeDatabase = async (): Promise<void> => {
   await db.init();
