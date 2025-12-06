@@ -29,20 +29,22 @@ self.addEventListener('activate', (event) => {
   console.log('Service Worker активирован');
   
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== API_CACHE) {
-            console.log('Удаление старого кэша:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Очистка старых кэшей
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME && cacheName !== API_CACHE) {
+              console.log('Удаление старого кэша:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Берем контроль над всеми клиентами
+      self.clients.claim()
+    ])
   );
-  
-  // Берем контроль над всеми клиентами
-  return self.clients.claim();
 });
 
 // Перехват запросов
