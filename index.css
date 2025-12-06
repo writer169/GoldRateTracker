@@ -2,12 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Базовые стили */
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 html {
   height: -webkit-fill-available;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+/* PWA safe area для устройств с вырезами (notch) */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Плавные переходы */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
