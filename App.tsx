@@ -8,6 +8,7 @@ import { DigitAnalysis } from './components/DigitAnalysis';
 import { fetchRates, shouldUpdate, initializeDatabase } from './services/api';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useAutoUpdate } from './hooks/useAutoUpdate';
+import { usePWANotification } from './hooks/usePWANotification';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   useWakeLock();
+  usePWANotification();
 
   // Отслеживание онлайн/офлайн статуса
   useEffect(() => {
