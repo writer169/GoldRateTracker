@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
 
-const VALID_KEY = 'gold2024secret'; // Измените на свой ключ
+// Ключ берется из переменных окружения
+const VALID_KEY = import.meta.env.VITE_ACCESS_KEY || '';
 const TWA_PACKAGE = 'app.vercel.gold_rate_tracker_theta.twa';
 
 interface AuthWrapperProps {
