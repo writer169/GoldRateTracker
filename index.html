@@ -2,10 +2,29 @@
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+    <meta name="theme-color" content="#10b981" />
+    <meta name="description" content="Мониторинг цен на золото в режиме реального времени" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GoldRate" />
+    
     <title>Gold Rate Monitor</title>
-    <meta name="description" content="Gold rate monitor" />
-  <script type="importmap">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    
+    <!-- iOS Splash Screens (опционально) -->
+    <link rel="apple-touch-startup-image" href="/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px)" />
+    <link rel="apple-touch-startup-image" href="/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px)" />
+    <link rel="apple-touch-startup-image" href="/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px)" />
+    
+    <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -13,15 +32,51 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "date-fns": "https://aistudiocdn.com/date-fns@^4.1.0",
     "date-fns/": "https://aistudiocdn.com/date-fns@^4.1.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "mongodb": "https://aistudiocdn.com/mongodb@^7.0.0",
-    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.5.8",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
   }
 }
-</script>
-</head>
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('Service Worker зарегистрирован:', registration.scope);
+              
+              // Периодическая фоновая синхронизация (если поддерживается)
+              if ('periodicSync' in registration) {
+                registration.periodicSync.register('daily-rate-update', {
+                  minInterval: 24 * 60 * 60 * 1000 // 24 часа
+                }).then(() => {
+                  console.log('Периодическая синхронизация зарегистрирована');
+                }).catch(err => {
+                  console.log('Ошибка регистрации периодической синхронизации:', err);
+                });
+              }
+            })
+            .catch(err => {
+              console.log('Ошибка регистрации Service Worker:', err);
+            });
+        });
+      }
+      
+      // Обработка установки PWA
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('PWA может быть установлено');
+      });
+      
+      // Отслеживание успешной установки
+      window.addEventListener('appinstalled', () => {
+        console.log('PWA успешно установлено');
+        deferredPrompt = null;
+      });
+    </script>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
