@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.vercel.gold_rate_tracker_theta.twa",
-        "sha256_cert_fingerprints": ["C5:6B:D5:3F:F7:BB:36:70:A5:EA:1E:1D:D5:E9:26:AE:23:77:4F:99:A2:39:17:0C:93:99:97:4B:2C:42:AB:4F"]
-      }
-    }]
