@@ -1,70 +1,100 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { differenceInHours, format } from 'date-fns';
 import ru from 'date-fns/locale/ru';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { ApiResponse, RateData } from './types';
 import { RateCard } from './components/RateCard';
 import { DigitAnalysis } from './components/DigitAnalysis';
-import { fetchRates } from './services/api';
+import { fetchRates, shouldUpdate, initializeDatabase } from './services/api';
 import { useWakeLock } from './hooks/useWakeLock';
+import { useAutoUpdate } from './hooks/useAutoUpdate';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
-  const [key, setKey] = useState<string>('');
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
-  // Активация Wake Lock для предотвращения затемнения экрана
   useWakeLock();
 
+  // Отслеживание онлайн/офлайн статуса
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const apiKey = searchParams.get('key');
-    if (apiKey) {
-      setKey(apiKey);
-    } else {
-      setError('Доступ запрещен: Отсутствует ключ безопасности');
-      setLoading(false);
-    }
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
-  const loadData = useCallback(async () => {
-    if (!key) return;
-    
+  const loadData = useCallback(async (forceUpdate = false) => {
     setLoading(true);
     setError(null);
+    
     try {
-      const result = await fetchRates(key);
-      setData(result);
+      // Инициализируем БД если нужно
+      await initializeDatabase();
+
+      // Проверяем нужно ли обновление
+      const needsUpdate = forceUpdate || await shouldUpdate();
+      
+      if (needsUpdate || !data) {
+        const result = await fetchRates();
+        setData(result);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки данных';
+      setError(errorMessage);
+      
+      // Даже при ошибке пытаемся показать кэшированные данные
+      try {
+        const result = await fetchRates();
+        if (result.current.length > 0) {
+          setData(result);
+          setError(null); // Убираем ошибку если есть кэш
+        }
+      } catch {
+        // Игнорируем
+      }
     } finally {
       setLoading(false);
     }
-  }, [key]);
+  }, [data]);
 
+  // Начальная загрузка
   useEffect(() => {
-    if (key) {
-      loadData();
-    }
-  }, [key, loadData]);
+    loadData();
+  }, []);
 
-  // Автоматическая перезагрузка при возврате на страницу
+  // Автообновление при возврате на страницу
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && key) {
-        loadData();
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        const needsUpdate = await shouldUpdate();
+        if (needsUpdate) {
+          loadData(true);
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [key, loadData]);
+  }, [loadData]);
 
-  // Sort rates: 999 -> 750 -> 585
+  // Автоматическое обновление раз в день
+  useAutoUpdate(async () => {
+    const needsUpdate = await shouldUpdate();
+    if (needsUpdate) {
+      await loadData(true);
+    }
+  });
+
   const getSortedRates = (rates: RateData[]) => {
     return [...rates].sort((a, b) => Number(b.code) - Number(a.code));
   };
@@ -77,19 +107,22 @@ const App: React.FC = () => {
 
   const formatKZDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Get UTC time in ms
     const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-    // Add 5 hours for KZ
     const kzTime = new Date(utc + (3600000 * 5));
     return format(kzTime, 'dd.MM.yyyy HH:mm', { locale: ru });
   };
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-100">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
         <h1 className="text-xl font-bold text-center text-slate-800">{error}</h1>
-        {!key && <p className="mt-2 text-slate-500">Добавьте ?key=ВАШ_КЛЮЧ в адресную строку</p>}
+        <button
+          onClick={() => loadData(true)}
+          className="mt-4 px-6 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors"
+        >
+          Попробовать снова
+        </button>
       </div>
     );
   }
@@ -98,7 +131,6 @@ const App: React.FC = () => {
   const prevRates = data ? getSortedRates(data.previous) : [];
   const stale = isStale(data?.lastUpdated);
 
-  // Header styles based on state
   const headerBaseClass = "sticky top-0 z-50 px-4 py-2 flex items-center justify-between cursor-pointer transition-colors shadow-sm";
   const headerColorClass = loading 
     ? 'bg-slate-200' 
@@ -108,16 +140,15 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-dvh bg-white shadow-xl flex flex-col relative">
-      {/* Header / Status Bar */}
       <header 
-        onClick={!loading ? loadData : undefined}
+        onClick={!loading ? () => loadData(true) : undefined}
         className={`${headerBaseClass} ${headerColorClass}`}
       >
         <div className="flex flex-col">
           {!stale && !loading && (
-             <span className="text-xs font-bold uppercase opacity-70">
-               Актуально
-             </span>
+            <span className="text-xs font-bold uppercase opacity-70">
+              Актуально
+            </span>
           )}
           <span className="text-lg font-bold truncate">
             {data?.lastUpdated 
@@ -125,13 +156,26 @@ const App: React.FC = () => {
               : 'Нет данных'}
           </span>
         </div>
-        <div className="p-2 rounded-full bg-white/20 backdrop-blur-sm">
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+        <div className="flex items-center gap-2">
+          {/* Индикатор онлайн/офлайн */}
+          <div className="p-1.5 rounded-full bg-white/20">
+            {isOnline ? (
+              <Wifi className="w-4 h-4" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-red-600" />
+            )}
+          </div>
+          <div className="p-2 rounded-full bg-white/20 backdrop-blur-sm">
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-5 h-5" />
+            )}
+          </div>
         </div>
       </header>
 
       <main className="flex-grow p-3 space-y-4">
-        {/* Main Price Cards */}
         <div className="space-y-2.5">
           {currentRates.map((rate) => {
             const previousRate = prevRates.find(p => p.code === rate.code);
@@ -146,7 +190,6 @@ const App: React.FC = () => {
           })}
         </div>
 
-        {/* Digit Analysis */}
         {data && data.previous.length > 0 && (
           <div className="pt-3 border-t border-slate-200">
             <DigitAnalysis current={data.current} previous={data.previous} />
@@ -154,7 +197,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Footer History */}
       {data && data.previous.length > 0 && (
         <footer className="p-3 bg-slate-50 border-t border-slate-200 text-xs">
           <div className="flex items-center justify-between mb-2">
@@ -174,7 +216,7 @@ const App: React.FC = () => {
             ))}
           </div>
           <div className="mt-4 text-center opacity-70 font-bold text-slate-500 text-sm">
-             Аванс Ломбард
+            Аванс Ломбард
           </div>
         </footer>
       )}
