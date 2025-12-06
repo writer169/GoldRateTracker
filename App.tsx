@@ -5,10 +5,9 @@ import { Loader2, AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { ApiResponse, RateData } from './types';
 import { RateCard } from './components/RateCard';
 import { DigitAnalysis } from './components/DigitAnalysis';
-import { fetchRates, shouldUpdate, initializeDatabase } from './services/api';
+import { fetchRates, initializeDatabase } from './services/api';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useAutoUpdate } from './hooks/useAutoUpdate';
-import { usePWANotification } from './hooks/usePWANotification';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -17,7 +16,6 @@ const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   useWakeLock();
-  usePWANotification();
 
   // Отслеживание онлайн/офлайн статуса
   useEffect(() => {
@@ -40,14 +38,10 @@ const App: React.FC = () => {
     try {
       // Инициализируем БД если нужно
       await initializeDatabase();
-
-      // Проверяем нужно ли обновление
-      const needsUpdate = forceUpdate || await shouldUpdate();
       
-      if (needsUpdate || !data) {
-        const result = await fetchRates();
-        setData(result);
-      }
+      // Всегда пытаемся обновить данные
+      const result = await fetchRates();
+      setData(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки данных';
       setError(errorMessage);
@@ -57,7 +51,7 @@ const App: React.FC = () => {
         const result = await fetchRates();
         if (result.current.length > 0) {
           setData(result);
-          setError(null); // Убираем ошибку если есть кэш
+          setError(null);
         }
       } catch {
         // Игнорируем
@@ -65,7 +59,7 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [data]);
+  }, []);
 
   // Начальная загрузка
   useEffect(() => {
@@ -74,12 +68,9 @@ const App: React.FC = () => {
 
   // Автообновление при возврате на страницу
   useEffect(() => {
-    const handleVisibilityChange = async () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const needsUpdate = await shouldUpdate();
-        if (needsUpdate) {
-          loadData(true);
-        }
+        loadData(true);
       }
     };
 
@@ -89,13 +80,8 @@ const App: React.FC = () => {
     };
   }, [loadData]);
 
-  // Автоматическое обновление раз в день
-  useAutoUpdate(async () => {
-    const needsUpdate = await shouldUpdate();
-    if (needsUpdate) {
-      await loadData(true);
-    }
-  });
+  // Автоматическое обновление 3 раза в день (9:00, 12:00, 18:00)
+  useAutoUpdate(() => loadData(true));
 
   const getSortedRates = (rates: RateData[]) => {
     return [...rates].sort((a, b) => Number(b.code) - Number(a.code));
