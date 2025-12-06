@@ -129,7 +129,9 @@ self.addEventListener('periodicsync', (event) => {
           self.registration.showNotification('Gold Rate Monitor', {
             body: 'Цены на золото обновлены',
             icon: '/icon-192.png',
-            badge: '/icon-192.png'
+            badge: '/icon-192.png',
+            tag: 'rate-update',
+            requireInteraction: false
           });
         })
         .catch(err => {
@@ -137,4 +139,25 @@ self.addEventListener('periodicsync', (event) => {
         })
     );
   }
+});
+
+// Обработка кликов по уведомлениям
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Если есть открытое окно, фокусируемся на нем
+        for (const client of clientList) {
+          if (client.url.includes(self.registration.scope) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Иначе открываем новое окно
+        if (self.clients.openWindow) {
+          return self.clients.openWindow('/');
+        }
+      })
+  );
 });
