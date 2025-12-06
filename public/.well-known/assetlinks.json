@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "app.vercel.gold_rate_tracker_theta.twa",
-        "sha256_cert_fingerprints": ["C5:6B:D5:3F:F7:BB:36:70:A5:EA:1E:1D:D5:E9:26:AE:23:77:4F:99:A2:39:17:0C:93:99:97:4B:2C:42:AB:4F"]
+        "sha256_cert_fingerprints": ["08:49:B9:28:C3:8C:46:9D:8C:62:C7:4E:DF:18:F1:3B:06:C0:FC:7F:20:BA:20:CD:5C:27:98:6F:4B:A9:F5:60"]
       }
     }]
