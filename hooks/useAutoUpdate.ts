@@ -1,29 +1,34 @@
 import { useEffect, useRef } from 'react';
 
-// Хук для автоматического обновления раз в день
+// Хук для автоматического обновления 3 раза в день: 9:00, 12:00, 18:00
 export const useAutoUpdate = (updateFn: () => Promise<void>) => {
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Функция для расчета времени до следующего обновления
+    const UPDATE_HOURS = [9, 12, 18]; // Часы обновления
+
     const getMillisecondsUntilNextUpdate = () => {
       const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0); // Обновление в 9:00 следующего дня
+      const currentHour = now.getHours();
       
-      let msUntilUpdate = tomorrow.getTime() - now.getTime();
+      // Находим следующий час обновления
+      let nextHour = UPDATE_HOURS.find(hour => hour > currentHour);
       
-      // Если уже после 9:00 сегодня, обновляем завтра
-      if (msUntilUpdate < 0) {
+      // Если не нашли (уже после 18:00), берем первый час завтрашнего дня
+      if (nextHour === undefined) {
+        nextHour = UPDATE_HOURS[0];
+        const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        msUntilUpdate = tomorrow.getTime() - now.getTime();
+        tomorrow.setHours(nextHour, 0, 0, 0);
+        return tomorrow.getTime() - now.getTime();
       }
       
-      return msUntilUpdate;
+      // Вычисляем время до следующего обновления сегодня
+      const nextUpdate = new Date(now);
+      nextUpdate.setHours(nextHour, 0, 0, 0);
+      return nextUpdate.getTime() - now.getTime();
     };
 
-    // Планируем первое обновление
     const scheduleNextUpdate = () => {
       const msUntilUpdate = getMillisecondsUntilNextUpdate();
       
